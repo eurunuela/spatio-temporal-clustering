@@ -54,3 +54,7 @@ echo "========================================================"
 echo "========================================================"
 echo "Spatio-temporal clustering finished. Results saved in $FILENAME_NEW."
 echo "========================================================"
+
+rm "$CLUST_MASK_FILE*"
+rm "$CLUST_FILE*"
+rm "$NONZERO_FILE*"
