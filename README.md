@@ -4,9 +4,11 @@ The Spatio Temporal Clustering script has been developed for fMRI data.
 ## Usage
 The required arguments are the following:
 
-- **INPUT**: filename of the input file.
-- **OUTPUT**: filename for the output file.
-- **SIZE**: minimum size of the clusters.
+1. **INPUT**: filename of the input file.
+2. **OUTPUT**: filename for the output file.
+3. **SIZE**: minimum size of the clusters.
+
+All three arguments should be given to the command **in the following order**:
 
 `spatio_temporal_clustering.sh ${INPUT} ${OUTPUT} ${SIZE}`
 
