@@ -1,5 +1,5 @@
 # Spatio Temporal Clustering
-The Spatio Temporal Clustering script has been developed for fMRI data using [AFNI](https://afni.nimh.nih.gov). It is written in BASH and it aims to remove spurious, scattered neuronal-related activity in favor of clusters. The clustering is applied in a `t-1 < t < t+1` sliding window to maintain the activity in `groups of voxels > SIZE`.
+The Spatio Temporal Clustering script has been developed for fMRI data using [AFNI](https://afni.nimh.nih.gov). It is written in BASH and it aims to remove spurious, scattered neuronal-related activity in favor of clusters. The clustering is applied in a `t-1 < t < t+1` sliding window to maintain the activity in `groups of voxels >= SIZE`.
 
 ## Usage
 The required arguments are the following:
