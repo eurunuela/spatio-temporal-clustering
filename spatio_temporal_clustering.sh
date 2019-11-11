@@ -1,64 +1,62 @@
 #!/bin/bash
 
+# try as single command
+
+Narg=$#        
+
+# check if we have the correct number of args-- $Narg is the number
+# plus one (for the command name)
+if [ $# -eq 5 ]
+then
+    echo "++ Great, have the correct number of args: $Narg"
+    echo "   Let's run"
+else
+    echo "** Need 4 args, not: $Narg"
+    exit 1
+fi
+
 FILENAME=$1
 FILENAME_NEW=$2
 CLUSTERSIZE=$3
 VOXELTHRESH=$4
-DIR=$5
 
-cd $DIR
+# ---------------------------------------------------------------------
 
-CLUST_FILE='temp+orig.'
-NONZERO_FILE='nonzero+orig.'
-CLUST_MASK_FILE='clust_mask+orig.'
+RAND_ID=`3dnewid -fun11`
 
-NSCANS=$(3dinfo -nv ${FILENAME})
+imed_calc=__${RAND_ID}_calc.nii
+imed_merge=__${RAND_ID}_merge.nii
 
-rm "${CLUST_MASK_FILE}*"
-rm "${CLUST_FILE}*"
-rm "${NONZERO_FILE}*"
+# ---------------------------------------------------------------------
 
-for coef_idx in $(seq 0 $((NSCANS-1)))
-do
-    echo "========================================================"
-    echo "Timepoint $((coef_idx+1)) of $NSCANS done..."
-    echo "========================================================"
-    if [ $coef_idx -eq 0 ]
-    then
-        3dTstat -absmax -prefix ${NONZERO_FILE} ${FILENAME}[$((coef_idx)):$((coef_idx+1))] -overwrite
-        #3dcalc -a ${NONZERO_FILE} -expr 'bool(a)' -prefix ${NONZERO_FILE} -overwrite
-        3dmerge -dxyz=1 -1clust 1 ${CLUSTERSIZE} -2thresh -${VOXELTHRESH} ${VOXELTHRESH} \
-                -prefix ${CLUST_FILE} ${NONZERO_FILE} -overwrite
-        # 3dClusterize -nosum -1Dformat -inset ${NONZERO_FILE} -idat 0 -clust_nvox 5 -binary -1sided 'RIGHT' 0.05 -pref_dat ${CLUST_FILE}
-        3dTcat -prefix ${CLUST_MASK_FILE} ${CLUST_FILE} -overwrite
-    elif [ $coef_idx -eq $((NSCANS-1)) ]
-    then
-        3dTstat -absmax -prefix ${NONZERO_FILE} ${FILENAME}[$((coef_idx-1)):$((coef_idx))] -overwrite
-        #3dcalc -a ${NONZERO_FILE} -expr 'bool(a)' -prefix ${NONZERO_FILE} -overwrite
-        3dmerge -dxyz=1 -1clust 1 ${CLUSTERSIZE} -2thresh -${VOXELTHRESH} ${VOXELTHRESH} \
-                -prefix ${CLUST_FILE} ${NONZERO_FILE} -overwrite
-        # 3dClusterize -nosum -1Dformat -inset ${NONZERO_FILE} -idat 0 -clust_nvox 5 -binary -1sided 'RIGHT' 0.05 -pref_dat ${CLUST_FILE}
-        3dTcat -glueto ${CLUST_MASK_FILE} ${CLUST_FILE}
-    else
-        3dTstat -absmax -prefix ${NONZERO_FILE} ${FILENAME}[$((coef_idx-1)):$((coef_idx+1))] -overwrite
-        #3dcalc -a ${NONZERO_FILE} -expr 'bool(a)' -prefix ${NONZERO_FILE} -overwrite
-        3dmerge -dxyz=1 -1clust 1 ${CLUSTERSIZE} -2thresh -${VOXELTHRESH} ${VOXELTHRESH}  \
-                -prefix ${CLUST_FILE} ${NONZERO_FILE} -overwrite
-        # 3dClusterize -nosum -1Dformat -inset ${NONZERO_FILE} -idat 0 -clust_nvox 5 -binary -1sided 'RIGHT' 0.05 -pref_dat ${CLUST_FILE}
-        3dTcat -glueto ${CLUST_MASK_FILE} ${CLUST_FILE}
-    fi
-done
+3dcalc \
+    -a ${FILENAME} \
+    -b 'a[0,0,0,1]' \
+    -c 'a[0,0,0,-1]' \
+    -expr "maxbelow(10000000000,abs(a)*step(abs(a)-${VOXELTHRESH}),abs(b)*step(abs(b)-${VOXELTHRESH}),abs(c)*step(abs(c)-${VOXELTHRESH}))" \
+    -prefix ${imed_calc} \
+    -overwrite
 
-echo "========================================================"
-echo "Applying spatio-temporal clustering mask on $FILENAME..."
-echo "========================================================"
+3dmerge                              \
+    -dxyz=1                          \
+    -1clust 1 ${CLUSTERSIZE}         \
+    -doall                           \
+    -prefix ${imed_merge}            \
+    ${imed_calc}
 
-3dcalc -a ${FILENAME} -b ${CLUST_MASK_FILE} -expr 'a*step(b)' -prefix ${FILENAME_NEW} -overwrite
+3dcalc                               \
+    -a ${FILENAME}                   \
+    -b ${imed_merge}                 \
+    -expr 'a*step(b)'                \
+    -prefix ${FILENAME_NEW}          \
+    -overwrite
 
-echo "========================================================"
-echo "Spatio-temporal clustering finished. Results saved in $FILENAME_NEW."
-echo "========================================================"
+# clean
+\rm -f __${RAND_ID}_*
 
-#rm "$CLUST_MASK_FILE*"
-#rm "$CLUST_FILE*"
-#rm "$NONZERO_FILE*"
+echo "========================================================================"
+echo "Spatio-temporal clustering finished. Results saved in:  ${FILENAME_NEW}"
+echo "========================================================================"
+
+# done!
+exit 0
