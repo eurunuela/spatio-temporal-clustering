@@ -67,37 +67,45 @@ def _create_file_str():
 
 def main(argv):
     parser = argparse.ArgumentParser(description='Spatio-temporal clustering.')
-    parser.add_argument('--input', type=str, nargs=1)
-    parser.add_argument('--prefix', type=str, nargs=1)
-    parser.add_argument('--w_plus', type=int, default=1, nargs=1)
-    parser.add_argument('--w_minus', type=int, default=1, nargs=1)
+    parser.add_argument('--input', type=str, nargs=1,
+                        help='Filename of the input file.')
+    parser.add_argument('--output', type=str, nargs=1,
+                        help='Filename for the output file.')
+    parser.add_argument('--w_pos', type=int, default=1, nargs=1,
+                        help=('length of the sliding window going forward '
+                              '(default=1).'))
+    parser.add_argument('--w_neg', type=int, default=1, nargs=1,
+                        help=('length of the sliding window going backwards '
+                              '(default=1).'))
     parser.add_argument('--method', type=str, default='absmax', nargs=1,
                         help=('Method to select the voxels to retain '
                               '(default = \'absmax\')'))
-    parser.add_argument('--clustsize', type=int, default=5, nargs=1)
-    parser.add_argument('--thr', type=float, default=0.5, nargs=1)
+    parser.add_argument('--clustsize', type=int, default=5, nargs=1,
+                        help='Minimum size of the clusters (default=5)')
+    parser.add_argument('--thr', type=float, default=0.5, nargs=1,
+                        help='value to threshold the data (default = 0.5).')
     args = parser.parse_args()
 
     input_filename = args.input[0]
-    output_filename = args.prefix[0]
-    w_plus = args.w_plus[0]
-    w_minus = -args.w_minus[0]
+    output_filename = args.output[0]
+    w_pos = args.w_pos[0]
+    w_neg = -args.w_neg[0]
     method = args.method
     clustsize = args.clustsize
     thr = args.thr
 
     # Call to the main spatio_temporal_clustering.sh script
-    if w_plus == 1 and w_minus == 1 and 'absmax' in method:
+    if w_pos == 1 and w_neg == 1 and 'absmax' in method:
         command_str = 'sh spatio_temporal_clustering.sh {} {} {} {}'\
                       .format(input_filename, output_filename, clustsize, thr)
         run(command_str, shell=True)
     # Call to the edited spatio_temporal_clustering.sh script
     else:
         # Number of time points in sliding window
-        n_tp = w_plus + abs(w_minus) + 1
+        n_tp = w_pos + abs(w_neg) + 1
 
         alpha_list = list(string.ascii_lowercase)[1:n_tp]
-        w_range = np.arange(w_minus, w_plus + 1)
+        w_range = np.arange(w_neg, w_pos + 1)
         w_range = w_range[np.nonzero(w_range)]
         var_str = []
         edit_str = []
